@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
 using SwordAndFather.Models;
 
@@ -6,24 +7,44 @@ namespace SwordAndFather.Data
 {
     public class UserRepository
     {
-        static List<User> _users = new List<User>();
+        const string ConnectionString = "Server=localhost;Database=SwordAndFather;Trusted_Connection=True;";
 
         public User AddUser(string username, string password)
         {
-            var newUser = new User(username, password);
+            using (var connection = new SqlConnection(ConnectionString))
+            {
+                connection.Open();
 
-            newUser.Id = _users.Count + 1;
+                var insertUserCommand = connection.CreateCommand();
+                insertUserCommand.CommandText = $@"insert into Users(Username, Password)
+                                              output inserted.*
+                                              values('{username}', '{password}')";
 
-            _users.Add(newUser);
+                var reader = insertUserCommand.ExecuteReader();
 
-            return newUser;
+                if (reader.Read())
+                {
+                    var insertedPassword = reader["password"].ToString();
+                    var insertedUsername = reader["username"].ToString();
+                    var insertedId = (int)reader["Id"];
+
+                    var newUser = new User(insertedUsername, insertedPassword) { Id = insertedId };
+
+                    return newUser;
+                }
+
+            }
+
+            throw new Exception("No user found");
+
         }
+
 
         public List<User> GetAll()
         {
             var users = new List<User>();
 
-            var connection = new SqlConnection("Server=localhost;Database=SwordAndFather;Trusted_Connection=True;");
+            var connection = new SqlConnection(ConnectionString);
             connection.Open();
 
             var getAllUsersCommand = connection.CreateCommand();
