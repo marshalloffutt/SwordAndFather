@@ -18,7 +18,10 @@ namespace SwordAndFather.Data
                 var insertUserCommand = connection.CreateCommand();
                 insertUserCommand.CommandText = $@"insert into Users(Username, Password)
                                               output inserted.*
-                                              values('{username}', '{password}')";
+                                              values(@username, @password)";
+
+                insertUserCommand.Parameters.AddWithValue("username", username);
+                insertUserCommand.Parameters.AddWithValue("password", password);
 
                 var reader = insertUserCommand.ExecuteReader();
 
