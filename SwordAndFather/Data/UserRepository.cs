@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
+using Dapper;
 using SwordAndFather.Models;
 
 namespace SwordAndFather.Data
@@ -11,64 +13,58 @@ namespace SwordAndFather.Data
 
         public User AddUser(string username, string password)
         {
-            using (var connection = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(ConnectionString))
             {
-                connection.Open();
+                var newUser = db.QueryFirstOrDefault<User>(@"
+                    insert into Users(Username, Password)
+                    output inserted.*
+                    values(@username, @password)", 
+                    new { username, password}); // <--- anonymous type
 
-                var insertUserCommand = connection.CreateCommand();
-                insertUserCommand.CommandText = $@"insert into Users(Username, Password)
-                                              output inserted.*
-                                              values(@username, @password)";
-
-                insertUserCommand.Parameters.AddWithValue("username", username);
-                insertUserCommand.Parameters.AddWithValue("password", password);
-
-                var reader = insertUserCommand.ExecuteReader();
-
-                if (reader.Read())
+                if (newUser != null)
                 {
-                    var insertedPassword = reader["password"].ToString();
-                    var insertedUsername = reader["username"].ToString();
-                    var insertedId = (int)reader["Id"];
-
-                    var newUser = new User(insertedUsername, insertedPassword) { Id = insertedId };
-
                     return newUser;
                 }
-
             }
 
-            throw new Exception("No user found");
-
+            throw new Exception("No user created");
         }
 
+        public void DeleteUser(int id)
+        {
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                var rowsAffected = db.Execute("Delete From Users where Id = @id", new {id});
+
+                if (rowsAffected != 1)
+                {
+                    throw new Exception("You done goofed");
+                }
+            }
+        }
+
+        public User UpdateUser(User userToUpdate)
+        {
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                var rowsAffected = db.Execute(@"Update Users
+                             Set username = @username,
+                                 password = @password
+                             Where id = @id", userToUpdate);
+
+                if (rowsAffected == 1)
+                    return userToUpdate;
+            }
+            throw new Exception("Could not update user");
+        }
 
         public List<User> GetAll()
         {
-            var users = new List<User>();
-
-            var connection = new SqlConnection(ConnectionString);
-            connection.Open();
-
-            var getAllUsersCommand = connection.CreateCommand();
-            getAllUsersCommand.CommandText = @"select username,password,id  
-                                               from users";
-
-            var reader = getAllUsersCommand.ExecuteReader();
-
-            while (reader.Read())
+            using (var db = new SqlConnection(ConnectionString))
             {
-                var id = (int)reader["Id"];
-                var username = reader["username"].ToString();
-                var password = reader["password"].ToString();
-                var user = new User(username, password) { Id = id };
-
-                users.Add(user);
+                return db.Query<User>("select username,password,id from users").ToList();
             }
-
-            connection.Close();
-
-            return users;
         }
+
     }
 }
