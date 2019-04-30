@@ -48,9 +48,9 @@ namespace SwordAndFather.Data
             using (var db = new SqlConnection(ConnectionString))
             {
                 var rowsAffected = db.Execute(@"Update Users
-                             Set username = @username,
-                                 password = @password
-                             Where id = @id", userToUpdate);
+                                             Set username = @username,
+                                                 password = @password
+                                             Where id = @id", userToUpdate);
 
                 if (rowsAffected == 1)
                     return userToUpdate;
