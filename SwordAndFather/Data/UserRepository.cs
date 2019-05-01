@@ -58,11 +58,20 @@ namespace SwordAndFather.Data
             throw new Exception("Could not update user");
         }
 
-        public List<User> GetAll()
+        public IEnumerable<User> GetAll()
         {
             using (var db = new SqlConnection(ConnectionString))
             {
-                return db.Query<User>("select username,password,id from users").ToList();
+                var users = db.Query<User>("select username,password,id from users").ToList();
+
+                var targets = db.Query<Target>("Select * from Targets").ToList();
+
+                foreach (var user in users)
+                {
+                    user.Targets = targets.Where(target => target.UserId == user.Id).ToList();
+                }
+
+                return users;
             }
         }
 

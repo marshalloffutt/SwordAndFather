@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.SqlClient;
+using System.Linq;
 using Dapper;
 using SwordAndFather.Models;
 
@@ -42,6 +44,16 @@ namespace SwordAndFather.Data
             }
 
             throw new Exception("No target created");
+        }
+
+        public IEnumerable<Target> GetAll()
+        {
+            using (var db = new SqlConnection(ConnectionString))
+            {
+                var targets = db.Query<Target>("Select * from Targets").ToList();
+
+                return targets;
+            }
         }
     }
 }
