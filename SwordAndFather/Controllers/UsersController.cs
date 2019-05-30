@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using SwordAndFather.Data;
 using SwordAndFather.Models;
+using SwordAndFather.Validators;
 
 namespace SwordAndFather.Controllers
 {
@@ -11,10 +12,10 @@ namespace SwordAndFather.Controllers
         readonly UserRepository _userRepository;
         readonly CreateUserRequestValidator _validator;
 
-        public UsersController()
+        public UsersController(UserRepository userRepository)
         {
+            _userRepository = userRepository;
             _validator = new CreateUserRequestValidator();
-            _userRepository = new UserRepository();
         }
 
         [HttpPost("register")]
@@ -41,12 +42,12 @@ namespace SwordAndFather.Controllers
 
     }
 
-    public class CreateUserRequestValidator
-    {
-        public bool Validate(CreateUserRequest requestToValidate)
-        {
-            return string.IsNullOrEmpty(requestToValidate.Username)
-                   || string.IsNullOrEmpty(requestToValidate.Password);
-        }
-    }
+    //public class CreateUserRequestValidator
+    //{
+    //    public bool Validate(CreateUserRequest requestToValidate)
+    //    {
+    //        return string.IsNullOrEmpty(requestToValidate.Username)
+    //               || string.IsNullOrEmpty(requestToValidate.Password);
+    //    }
+    //}
 }
