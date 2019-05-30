@@ -3,17 +3,25 @@ using System.Collections.Generic;
 using System.Data.SqlClient;
 using System.Linq;
 using Dapper;
+using Microsoft.Extensions.Options;
 using SwordAndFather.Models;
 
 namespace SwordAndFather.Data
 {
     public class UserRepository
     {
-        const string ConnectionString = "Server=localhost;Database=SwordAndFather;Trusted_Connection=True;";
+        readonly TargetRepository _targetRepository;
+        readonly string _connectionString;
+
+        public UserRepository(TargetRepository targetRepository, IOptions<DbConfiguration> dbConfig)
+        {
+            _targetRepository = targetRepository;
+            _connectionString = dbConfig.Value.ConnectionString;
+        }
 
         public User AddUser(string username, string password)
         {
-            using (var db = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(_connectionString))
             {
                 var newUser = db.QueryFirstOrDefault<User>(@"
                     insert into Users(Username, Password)
@@ -30,11 +38,15 @@ namespace SwordAndFather.Data
             throw new Exception("No user created");
         }
 
-        public void DeleteUser(int id)
+        public void DeleteUser(int userId)
         {
-            using (var db = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(_connectionString))
             {
-                var rowsAffected = db.Execute("Delete From Users where Id = @id", new {id});
+                var parameter = new { Id = userId };
+
+                var deleteQuery = "Delete From Users where Id = @id";
+
+                var rowsAffected = db.Execute(deleteQuery, parameter);
 
                 if (rowsAffected != 1)
                 {
@@ -45,8 +57,9 @@ namespace SwordAndFather.Data
 
         public User UpdateUser(User userToUpdate)
         {
-            using (var db = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(_connectionString))
             {
+                // Nathan's preferred method
                 var rowsAffected = db.Execute(@"Update Users
                                              Set username = @username,
                                                  password = @password
@@ -60,7 +73,7 @@ namespace SwordAndFather.Data
 
         public IEnumerable<User> GetAll()
         {
-            using (var db = new SqlConnection(ConnectionString))
+            using (var db = new SqlConnection(_connectionString))
             {
                 var users = db.Query<User>("select username,password,id from users").ToList();
 
@@ -70,6 +83,15 @@ namespace SwordAndFather.Data
                 {
                     user.Targets = targets.Where(target => target.UserId == user.Id).ToList();
                 }
+
+                //var targets = new TargetRepository().GetAll().GroupBy(target => target.UserId);
+
+                //foreach (var user in users)
+                //{
+                //    var matchingTargets = targets.FirstOrDefault(grouping => grouping.Key == user.Id);
+
+                //    user.Targets = matchingTargets?.ToList();
+                //}
 
                 return users;
             }

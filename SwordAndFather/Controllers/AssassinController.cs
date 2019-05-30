@@ -57,9 +57,9 @@ namespace SwordAndFather.Controllers
     {
         public bool Validate(CreateAssassinRequest request)
         {
-            return !string.IsNullOrEmpty(request.Catchphrase) &&
-                   !string.IsNullOrEmpty(request.CodeName) &&
-                   !string.IsNullOrEmpty(request.PreferredWeapon);
+            return !(string.IsNullOrEmpty(request.Catchphrase)
+                   || string.IsNullOrEmpty(request.CodeName)
+                   || string.IsNullOrEmpty(request.PreferredWeapon));
         }
     }
 }
